@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Video Watermark Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--s1:#151820;--s2:#1c2030;
+  --bd:rgba(255,255,255,0.08);--bdh:rgba(79,172,254,0.4);
+  --a:#4facfe;--a2:#a78bfa;--g:#34d399;--o:#fb923c;--r2:#f87171;
+  --t:#e2e8f0;--t2:#94a3b8;--t3:#475569;
+  --rad:13px;--rsm:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* Weebly isolation — prevent their CSS from breaking our layout */
+#app,#app *{box-sizing:border-box!important;line-height:normal!important;letter-spacing:0!important}
+#app input,#app select,#app button,#app span,#app div,#app label{font-family:'Inter',sans-serif!important}
+
+.mesh{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(79,172,254,0.07) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 100%,rgba(167,139,250,0.06) 0%,transparent 60%),
+             var(--bg)}
+#app{position:relative;z-index:1}
+
+/* HEADER */
+.hdr{padding:22px 16px 12px;text-align:center;border-bottom:1px solid var(--bd)}
+.hdr h1{font-family:'Space Grotesk',sans-serif!important;font-size:clamp(20px,5vw,34px);font-weight:700;
+  background:linear-gradient(135deg,#4facfe,#a78bfa);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-0.01em!important}
+.hdr p{font-size:12px;color:var(--t3);margin-top:4px}
+
+/* LAYOUT */
+.wrap{max-width:1080px;margin:0 auto;padding:14px 14px 48px;
+  display:grid;grid-template-columns:1fr 310px;gap:12px;align-items:start}
+@media(max-width:780px){.wrap{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:11px}
+
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--rad);padding:15px 14px}
+.ctitle{font-size:11px!important;font-weight:700!important;color:var(--t3)!important;
+  text-transform:uppercase;letter-spacing:0.06em!important;
+  margin-bottom:11px;display:flex;align-items:center;gap:6px}
+.ico{width:19px;height:19px;border-radius:5px;display:flex;align-items:center;
+  justify-content:center;font-size:10px;flex-shrink:0;font-style:normal}
+.ib{background:rgba(79,172,254,0.15);color:#4facfe}
+.ip{background:rgba(167,139,250,0.15);color:#a78bfa}
+.ig{background:rgba(52,211,153,0.15);color:#34d399}
+
+/* DROPZONE */
+.dz{position:relative;overflow:hidden;display:block;
+  border:2px dashed rgba(79,172,254,0.3);border-radius:10px;
+  padding:30px 16px;text-align:center;cursor:pointer;
+  background:rgba(79,172,254,0.02);transition:all 0.2s}
+.dz:hover,.dz.over{border-color:var(--a);background:rgba(79,172,254,0.07)}
+.dz input[type=file]{position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;opacity:0!important;
+  cursor:pointer!important;z-index:2!important;font-size:0!important}
+.dz-inner{position:relative;z-index:1;pointer-events:none}
+.dz-ico{width:42px;height:42px;background:rgba(79,172,254,0.1);border-radius:10px;
+  margin:0 auto 11px;display:flex;align-items:center;justify-content:center;color:var(--a)}
+.dz-t{font-size:15px!important;font-weight:600!important;color:var(--t)!important;margin-bottom:3px}
+.dz-s{font-size:12px!important;color:var(--t3)!important}
+
+/* VIDEO */
+.vwrap{position:relative;background:#000;border-radius:9px;overflow:hidden;aspect-ratio:16/9}
+.vwrap video{width:100%;height:100%;object-fit:contain;display:block}
+#watermarkCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.fpsbadge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.65);
+  backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.1);
+  padding:3px 8px;border-radius:20px;font-size:11px!important;
+  font-weight:700!important;color:var(--g)!important;z-index:5}
+.vbtns{display:flex;gap:8px;margin-top:9px}
+.btn-play{flex:1;background:var(--s2);border:1px solid var(--bdh);color:var(--a);
+  padding:10px;border-radius:var(--rsm);font-size:13px!important;
+  font-weight:600!important;cursor:pointer;transition:all 0.2s}
+.btn-play:hover{background:rgba(79,172,254,0.1)}
+.btn-sm{background:var(--s2);border:1px solid var(--bd);color:var(--t2);
+  padding:10px 13px;border-radius:var(--rsm);font-size:13px!important;
+  font-weight:600!important;cursor:pointer;transition:all 0.2s}
+.btn-sm:hover{border-color:var(--bdh);color:var(--t)}
+
+/* EXPORT */
+.ffrow{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;background:var(--s2);border-radius:var(--rsm);
+  margin-bottom:11px;font-size:12px!important;color:var(--t2)!important}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;
+  border-radius:20px;font-size:11px!important;font-weight:600!important}
+.bl{background:rgba(251,146,60,0.15);border:1px solid rgba(251,146,60,0.4);color:var(--o)}
+.bk{background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:var(--g)}
+.bn{background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.4);color:var(--r2)}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.dot.pulse{animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.2}}
+
+.prog-wrap{margin-bottom:11px}
+.prog-hdr{display:flex;justify-content:space-between;margin-bottom:5px}
+.prog-stage{font-size:12px!important;color:var(--t2)!important}
+.prog-pct{font-size:12px!important;font-weight:700!important;color:var(--a)!important;font-variant-numeric:tabular-nums}
+.prog-track{height:5px;background:var(--s2);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--a),var(--a2));border-radius:3px;transition:width 0.2s}
+.prog-meta{display:flex;gap:12px;margin-top:5px;font-size:11px!important;color:var(--t3)!important}
+.exp-log{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rsm);
+  padding:6px 10px;font-size:11px!important;color:var(--a)!important;
+  max-height:34px;overflow:hidden;margin-top:7px;
+  white-space:nowrap;text-overflow:ellipsis}
+.exp-btns{display:flex;gap:8px}
+.btn-exp{flex:1;padding:12px 10px;border-radius:var(--rsm);border:none;
+  font-size:14px!important;font-weight:700!important;cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-exp:disabled{opacity:0.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.bwebm{background:linear-gradient(135deg,#34d399,#059669);color:#fff}
+.bwebm:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(52,211,153,0.3)}
+.bmp4{background:linear-gradient(135deg,#fb923c,#ea580c);color:#fff}
+.bmp4:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(251,146,60,0.3)}
+.exp-note{font-size:11px!important;color:var(--t3)!important;text-align:center;margin-top:7px;line-height:1.5}
+
+/* TEXT INPUT */
+.wm-input{width:100%!important;background:var(--s2)!important;
+  border:1.5px solid var(--bd)!important;border-radius:var(--rsm)!important;
+  padding:11px 13px!important;color:var(--t)!important;
+  font-size:15px!important;font-weight:500!important;outline:none!important;
+  transition:border-color 0.2s!important}
+.wm-input:focus{border-color:var(--a)!important}
+.wm-input::placeholder{color:var(--t3)!important}
+
+/* PRESET GRID */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.pbtn{background:var(--s2)!important;border:1px solid var(--bd)!important;
+  color:var(--t2)!important;padding:9px 6px!important;border-radius:var(--rsm)!important;
+  font-size:13px!important;font-weight:600!important;cursor:pointer!important;
+  transition:all 0.2s!important;text-align:center!important;line-height:1.3!important}
+.pbtn:hover{border-color:var(--bdh)!important;color:var(--t)!important}
+.pbtn.active{background:linear-gradient(135deg,rgba(79,172,254,0.18),rgba(167,139,250,0.18))!important;
+  border-color:var(--a)!important;color:var(--a)!important}
+
+/* CONTROLS */
+.ctrl{display:flex;flex-direction:column;gap:14px}
+.crow{display:flex;flex-direction:column;gap:7px}
+.clrow{display:flex;justify-content:space-between;align-items:center}
+.clbl{font-size:13px!important;font-weight:600!important;color:var(--t2)!important}
+.cval{font-size:12px!important;font-weight:700!important;color:var(--a)!important;
+  background:rgba(79,172,254,0.1)!important;padding:2px 9px!important;
+  border-radius:20px!important;min-width:52px!important;text-align:center!important;
+  font-variant-numeric:tabular-nums!important;display:inline-block!important}
+.cdiv{height:1px;background:var(--bd);margin:2px 0}
+
+/* RANGE */
+input[type=range]{-webkit-appearance:none!important;appearance:none!important;
+  width:100%!important;height:4px!important;background:var(--s2)!important;
+  border-radius:2px!important;outline:none!important;margin:0!important;cursor:pointer!important}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;
+  background:linear-gradient(90deg,var(--a),var(--a2))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none!important;
+  width:18px!important;height:18px!important;border-radius:50%!important;
+  background:#fff!important;margin-top:-7px!important;cursor:pointer!important;
+  box-shadow:0 0 0 2px var(--a),0 2px 6px rgba(0,0,0,0.4)!important}
+input[type=range]::-moz-range-thumb{width:18px!important;height:18px!important;
+  border-radius:50%!important;background:#fff!important;
+  border:2px solid var(--a)!important;cursor:pointer!important}
+
+/* SELECT */
+.wm-sel{width:100%!important;background:var(--s2)!important;
+  border:1.5px solid var(--bd)!important;border-radius:var(--rsm)!important;
+  padding:10px 36px 10px 12px!important;color:var(--t)!important;
+  font-size:14px!important;font-weight:500!important;outline:none!important;
+  -webkit-appearance:none!important;appearance:none!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2394a3b8' d='M6 8L0 0h12z'/%3E%3C/svg%3E")!important;
+  background-repeat:no-repeat!important;background-position:right 12px center!important;cursor:pointer!important}
+.wm-sel:focus{border-color:var(--a)!important}
+.wm-sel option{background:#1c2030;color:#e2e8f0}
+
+/* COLOR */
+input[type=color]{-webkit-appearance:none!important;width:40px!important;height:34px!important;
+  border:2px solid var(--bd)!important;border-radius:7px!important;
+  background:transparent!important;cursor:pointer!important;padding:0!important}
+input[type=color]::-webkit-color-swatch-wrapper{padding:2px!important}
+input[type=color]::-webkit-color-swatch{border:none!important;border-radius:4px!important}
+
+/* TOGGLE */
+.trow{display:flex;align-items:center;justify-content:space-between;
+  padding:9px 11px;background:var(--s2);border-radius:var(--rsm)}
+.tlbl{font-size:13px!important;font-weight:600!important;color:var(--t2)!important}
+.tsw{position:relative;display:inline-block;width:42px;height:23px;flex-shrink:0}
+.tsw input{opacity:0;width:0;height:0}
+.tsl{position:absolute;cursor:pointer;inset:0;background:var(--s1);
+  border:1px solid var(--bd);border-radius:23px;transition:0.3s}
+.tsl::before{content:'';position:absolute;width:15px;height:15px;
+  left:3px;top:3px;background:var(--t3);border-radius:50%;transition:0.3s}
+input:checked+.tsl{background:var(--a);border-color:var(--a)}
+input:checked+.tsl::before{transform:translateX(19px);background:#fff}
+
+/* TIPS */
+.tip{font-size:12px!important;color:var(--t3)!important;line-height:1.5!important}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--s2);border-radius:3px}
+
+@media(max-width:480px){
+  .exp-btns{flex-direction:column}
+  .vbtns{flex-wrap:wrap}
+  .btn-play{order:1;flex:none;width:100%}
+}
+
+#renderCanvas{display:none}
+</style>
+</head>
+<body>
+<div class="mesh"></div>
+<div id="app">
+
+<header class="hdr">
+  <h1>Video Watermark Studio</h1>
+  <p>Frame-accurate · WebCodecs · Works on any hosting</p>
+</header>
+
+<div class="wrap">
+
+<!-- LEFT COLUMN -->
+<div class="col">
+
+  <!-- Upload -->
+  <div class="card" id="uploadSection">
+    <div class="ctitle"><i class="ico ib">↑</i> Upload Video</div>
+    <label for="videoInput" class="dz" id="dropzone">
+      <input type="file" id="videoInput" accept="video/mp4,video/webm,video/quicktime,video/*">
+      <div class="dz-inner" id="dropzoneContent">
+        <div class="dz-ico">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+        </div>
+        <div class="dz-t">Tap to choose video</div>
+        <div class="dz-s">MP4 · WebM · MOV</div>
+      </div>
+    </label>
+  </div>
+
+  <!-- Preview -->
+  <div class="card" id="previewSection" style="display:none">
+    <div class="ctitle" style="justify-content:space-between">
+      <span style="display:flex;align-items:center;gap:6px"><i class="ico ip">▶</i> Live Preview</span>
+      <span class="fpsbadge" id="fpsCounter">0 FPS</span>
+    </div>
+    <div class="vwrap" id="videoContainer">
+      <video id="videoPlayer" loop playsinline preload="auto"></video>
+      <canvas id="watermarkCanvas"></canvas>
+    </div>
+    <div class="vbtns">
+      <button class="btn-play" id="playPauseBtn">▶ Play</button>
+      <button class="btn-sm"   id="resetVideoBtn">↺ Reset</button>
+      <button class="btn-sm"   id="fullscreenBtn">⛶</button>
+    </div>
+  </div>
+
+  <!-- Export -->
+  <div class="card" id="exportSection" style="display:none">
+    <div class="ctitle"><i class="ico ig">↓</i> Export</div>
+
+    <div class="ffrow">
+      <span>MP4 via ffmpeg.wasm</span>
+      <span class="badge bl" id="ffmpegStatus"><span class="dot pulse"></span> Loading…</span>
+    </div>
+
+    <div class="prog-wrap" id="exportProgress" style="display:none">
+      <div class="prog-hdr">
+        <span class="prog-stage" id="exportStage">Rendering</span>
+        <span class="prog-pct"><span id="progressPercent">0</span>%</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="prog-meta">
+        <span>Elapsed: <b id="timeElapsed">0s</b></span>
+        <span>ETA: <b id="timeEstimated">--</b></span>
+      </div>
+      <div class="exp-log" id="exportLog"></div>
+    </div>
+
+    <div class="exp-btns">
+      <button class="btn-exp bwebm" id="exportWebmBtn">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Export WebM
+      </button>
+      <button class="btn-exp bmp4" id="exportMp4Btn" disabled>
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Export MP4
+      </button>
+    </div>
+    <div class="exp-note">WebM works everywhere · MP4 needs ffmpeg (optional)</div>
+  </div>
+
+</div><!-- /col left -->
+
+<!-- RIGHT COLUMN -->
+<div class="col">
+
+  <!-- Text -->
+  <div class="card">
+    <div class="ctitle"><i class="ico ib">T</i> Watermark Text</div>
+    <input type="text" id="watermarkText" class="wm-input" placeholder="Your watermark…" value="© WATERMARK">
+  </div>
+
+  <!-- Presets -->
+  <div class="card">
+    <div class="ctitle"><i class="ico ip">✦</i> Animation</div>
+    <div class="pgrid">
+      <button class="pbtn active" data-preset="static">Static</button>
+      <button class="pbtn" data-preset="moving">Moving</button>
+      <button class="pbtn" data-preset="bouncing">Bouncing</button>
+      <button class="pbtn" data-preset="rotating">Rotating</button>
+      <button class="pbtn" data-preset="scrolling">Scrolling</button>
+      <button class="pbtn" data-preset="neon">Neon Glow</button>
+      <button class="pbtn" data-preset="tiktok">TikTok</button>
+      <button class="pbtn" data-preset="floating">Floating</button>
+      <button class="pbtn" data-preset="diagonal">Diagonal Grid</button>
+      <button class="pbtn" data-preset="anti-theft">Anti-Theft</button>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card">
+    <div class="ctitle"><i class="ico ib">⚙</i> Controls</div>
+    <div class="ctrl">
+
+      <div class="crow">
+        <div class="clrow">
+          <span class="clbl">Font Size</span>
+          <span class="cval"><span id="fontSizeValue">40</span> px</span>
+        </div>
+        <input type="range" id="fontSize" min="12" max="120" value="40">
+      </div>
+
+      <div class="crow">
+        <div class="clrow">
+          <span class="clbl">Opacity</span>
+          <span class="cval"><span id="opacityValue">30</span> %</span>
+        </div>
+        <input type="range" id="opacity" min="0" max="100" value="30">
+      </div>
+
+      <div class="crow">
+        <div class="clrow">
+          <span class="clbl">Speed</span>
+          <span class="cval"><span id="speedValue">1.0</span> ×</span>
+        </div>
+        <input type="range" id="animationSpeed" min="0.1" max="5" step="0.1" value="1">
+      </div>
+
+      <div class="crow">
+        <div class="clrow">
+          <span class="clbl">Rotation</span>
+          <span class="cval"><span id="rotationValue">-45</span> °</span>
+        </div>
+        <input type="range" id="rotation" min="-180" max="180" value="-45">
+      </div>
+
+      <div class="crow">
+        <div class="clrow">
+          <span class="clbl">Spacing</span>
+          <span class="cval"><span id="spacingValue">200</span> px</span>
+        </div>
+        <input type="range" id="spacing" min="50" max="500" value="200">
+      </div>
+
+      <div class="cdiv"></div>
+
+      <div class="crow">
+        <div class="clrow">
+          <span class="clbl">Color</span>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span id="colorValue" style="font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums">#ffffff</span>
+            <input type="color" id="watermarkColor" value="#ffffff">
+          </div>
+        </div>
+      </div>
+
+      <div class="crow">
+        <span class="clbl" style="margin-bottom:5px;display:block">Position</span>
+        <select id="position" class="wm-sel">
+          <option value="center">Center</option>
+          <option value="top-left">Top Left</option>
+          <option value="top-right">Top Right</option>
+          <option value="bottom-left">Bottom Left</option>
+          <option value="bottom-right">Bottom Right</option>
+          <option value="custom">Custom (Moving)</option>
+        </select>
+      </div>
+
+      <div class="trow">
+        <span class="tlbl">Repeat Pattern</span>
+        <label class="tsw">
+          <input type="checkbox" id="repeatMode">
+          <span class="tsl"></span>
+        </label>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="card">
+    <div class="ctitle" style="margin-bottom:9px"><i class="ico ip">i</i> Tips</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="tip">↗ Diagonal Grid or Anti-Theft for best protection</div>
+      <div class="tip">◎ Lower opacity = subtle, professional look</div>
+      <div class="tip">⚡ WebM exports without any server needed</div>
+      <div class="tip">📱 Chrome 94+ recommended for best export results</div>
+    </div>
+  </div>
+
+</div><!-- /col right -->
+</div><!-- /wrap -->
+</div><!-- /#app -->
+
+<canvas id="renderCanvas"></canvas>
+
+<script>
+    // ── STATE ────────────────────────────────────────────────────────────────────
+    const state = {
+        videoFile: null, isPlaying: false, animationId: null,
+        watermarkText: '© WATERMARK', fontSize: 40, opacity: 0.3,
+        animationSpeed: 1.0, rotation: -45, spacing: 200,
+        color: '#ffffff', position: 'center', repeatMode: false,
+        currentPreset: 'static', fps: 0, frameCount: 0,
+        fpsUpdateTime: 0, exportInProgress: false,
+        ffmpegReady: false, ffmpegInstance: null
+    };
+
+    // ── DOM REFS ──────────────────────────────────────────────────────────────────
+    const el = {
+        dropzone:        document.getElementById('dropzone'),
+        videoInput:      document.getElementById('videoInput'),
+        previewSection:  document.getElementById('previewSection'),
+        exportSection:   document.getElementById('exportSection'),
+        videoPlayer:     document.getElementById('videoPlayer'),
+        watermarkCanvas: document.getElementById('watermarkCanvas'),
+        renderCanvas:    document.getElementById('renderCanvas'),
+        watermarkText:   document.getElementById('watermarkText'),
+        fontSize:        document.getElementById('fontSize'),
+        opacity:         document.getElementById('opacity'),
+        animationSpeed:  document.getElementById('animationSpeed'),
+        rotation:        document.getElementById('rotation'),
+        spacing:         document.getElementById('spacing'),
+        watermarkColor:  document.getElementById('watermarkColor'),
+        position:        document.getElementById('position'),
+        repeatMode:      document.getElementById('repeatMode'),
+        fontSizeValue:   document.getElementById('fontSizeValue'),
+        opacityValue:    document.getElementById('opacityValue'),
+        speedValue:      document.getElementById('speedValue'),
+        rotationValue:   document.getElementById('rotationValue'),
+        spacingValue:    document.getElementById('spacingValue'),
+        colorValue:      document.getElementById('colorValue'),
+        playPauseBtn:    document.getElementById('playPauseBtn'),
+        resetVideoBtn:   document.getElementById('resetVideoBtn'),
+        fullscreenBtn:   document.getElementById('fullscreenBtn'),
+        exportWebmBtn:   document.getElementById('exportWebmBtn'),
+        exportMp4Btn:    document.getElementById('exportMp4Btn'),
+        fpsCounter:      document.getElementById('fpsCounter'),
+        exportProgress:  document.getElementById('exportProgress'),
+        progressFill:    document.getElementById('progressFill'),
+        progressPercent: document.getElementById('progressPercent'),
+        exportStage:     document.getElementById('exportStage'),
+        timeElapsed:     document.getElementById('timeElapsed'),
+        timeEstimated:   document.getElementById('timeEstimated'),
+        ffmpegStatus:    document.getElementById('ffmpegStatus'),
+        exportLog:       document.getElementById('exportLog')
+    };
+
+    // ── FFMPEG ────────────────────────────────────────────────────────────────────
+    async function loadFfmpeg() {
+        try {
+            const { createFFmpeg, fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/+esm');
+            const ffmpeg = createFFmpeg({ log: false, corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' });
+            await ffmpeg.load();
+            state.ffmpegInstance = ffmpeg; state.ffmpegReady = true;
+            window._ffetchFile = fetchFile;
+            el.ffmpegStatus.innerHTML = '<span class="dot"></span> Ready';
+            el.ffmpegStatus.className = 'badge bk';
+            el.exportMp4Btn.disabled = false;
+        } catch(e) {
+            el.ffmpegStatus.innerHTML = '<span class="dot"></span> Unavailable';
+            el.ffmpegStatus.className = 'badge bn';
+        }
+    }
+    loadFfmpeg();
+
+    // ── FILE HANDLING ─────────────────────────────────────────────────────────────
+    el.videoInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+    el.dropzone.addEventListener('dragover',  e => { e.preventDefault(); el.dropzone.classList.add('over'); });
+    el.dropzone.addEventListener('dragleave', () => el.dropzone.classList.remove('over'));
+    el.dropzone.addEventListener('drop', e => {
+        e.preventDefault(); el.dropzone.classList.remove('over');
+        if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+
+    function handleFile(file) {
+        if (!file || !file.type.startsWith('video/')) { alert('Please select a valid video file'); return; }
+        state.videoFile = file;
+        el.previewSection.style.display = 'block';
+        el.exportSection.style.display  = 'block';
+        if (el.videoPlayer.src && el.videoPlayer.src.startsWith('blob:')) URL.revokeObjectURL(el.videoPlayer.src);
+        el.videoPlayer.src = URL.createObjectURL(file);
+        el.videoPlayer.load();
+        document.getElementById('dropzoneContent').innerHTML = `
+            <div class="dz-ico" style="background:rgba(52,211,153,0.15);color:#34d399;margin:0 auto 11px">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <div class="dz-t" style="color:#34d399">Loaded!</div>
+            <div class="dz-s">${file.name}</div>`;
+    }
+
+    // ── VIDEO PLAYER ──────────────────────────────────────────────────────────────
+    el.playPauseBtn.addEventListener('click', () => {
+        if (state.isPlaying) {
+            el.videoPlayer.pause(); el.playPauseBtn.textContent = '▶ Play'; state.isPlaying = false;
+        } else {
+            el.videoPlayer.play().catch(()=>{}); el.playPauseBtn.textContent = '⏸ Pause'; state.isPlaying = true;
+        }
+    });
+    el.resetVideoBtn.addEventListener('click', () => { el.videoPlayer.currentTime = 0; });
+    el.fullscreenBtn.addEventListener('click', () => {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.getElementById('videoContainer').requestFullscreen().catch(()=>{});
+    });
+
+    // ── CONTROLS ──────────────────────────────────────────────────────────────────
+    el.watermarkText.addEventListener('input',  e => { state.watermarkText = e.target.value; });
+    el.fontSize.addEventListener('input',       e => { state.fontSize = parseInt(e.target.value); el.fontSizeValue.textContent = state.fontSize; });
+    el.opacity.addEventListener('input',        e => { state.opacity = parseInt(e.target.value)/100; el.opacityValue.textContent = e.target.value; });
+    el.animationSpeed.addEventListener('input', e => { state.animationSpeed = parseFloat(e.target.value); el.speedValue.textContent = parseFloat(e.target.value).toFixed(1); });
+    el.rotation.addEventListener('input',       e => { state.rotation = parseInt(e.target.value); el.rotationValue.textContent = state.rotation; });
+    el.spacing.addEventListener('input',        e => { state.spacing = parseInt(e.target.value); el.spacingValue.textContent = state.spacing; });
+    el.watermarkColor.addEventListener('input', e => { state.color = e.target.value; el.colorValue.textContent = state.color; });
+    el.position.addEventListener('change',      e => { state.position = e.target.value; });
+    el.repeatMode.addEventListener('change',    e => { state.repeatMode = e.target.checked; });
+
+    document.querySelectorAll('.pbtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.pbtn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            state.currentPreset = btn.dataset.preset;
+            applyPreset(state.currentPreset);
+        });
+    });
+
+    el.exportWebmBtn.addEventListener('click', () => startExport('webm'));
+    el.exportMp4Btn.addEventListener('click',  () => startExport('mp4'));
+
+    el.videoPlayer.addEventListener('loadedmetadata', () => {
+        el.watermarkCanvas.width  = el.videoPlayer.videoWidth;
+        el.watermarkCanvas.height = el.videoPlayer.videoHeight;
+        if (state.animationId) { cancelAnimationFrame(state.animationId); state.animationId = null; }
+        startPreviewLoop();
+    });
+
+
+    // ─── PRESETS ─────────────────────────────────────────────────────────────────
+    function applyPreset(preset) {
+        const presets = {
+            static:      { rotation: -45, opacity: 0.3,  repeatMode: false, position: 'center' },
+            moving:      { rotation: 0,   opacity: 0.5,  repeatMode: false, position: 'custom' },
+            bouncing:    { rotation: 0,   opacity: 0.4,  repeatMode: false, position: 'custom' },
+            rotating:    { rotation: 0,   opacity: 0.4,  repeatMode: false, position: 'center' },
+            scrolling:   { rotation: 0,   opacity: 0.3,  repeatMode: false, position: 'custom' },
+            neon:        { rotation: -45, opacity: 0.8,  repeatMode: false, position: 'center' },
+            tiktok:      { rotation: 0,   opacity: 0.5,  repeatMode: false, position: 'bottom-right' },
+            floating:    { rotation: 0,   opacity: 0.4,  repeatMode: false, position: 'custom' },
+            diagonal:    { rotation: -45, opacity: 0.2,  repeatMode: true,  spacing: 200 },
+            'anti-theft':{ rotation: -45, opacity: 0.15, repeatMode: true,  spacing: 150 }
+        };
+        const p = presets[preset];
+        if (!p) return;
+        state.rotation = p.rotation;
+        state.opacity = p.opacity;
+        state.repeatMode = p.repeatMode;
+        state.position = p.position;
+        if (p.spacing) state.spacing = p.spacing;
+        el.rotation.value = state.rotation;       el.rotationValue.textContent = state.rotation;
+        el.opacity.value = Math.round(state.opacity * 100); el.opacityValue.textContent = Math.round(state.opacity * 100);
+        el.repeatMode.checked = state.repeatMode;
+        el.position.value = state.position;
+        if (p.spacing) { el.spacing.value = state.spacing; el.spacingValue.textContent = state.spacing; }
+    }
+
+    // ─── WATERMARK DRAW ───────────────────────────────────────────────────────────
+    // t = real seconds of video time (used for animations so export & preview match exactly)
+    function drawWatermark(ctx, width, height, t) {
+        if (!state.watermarkText) return;
+        ctx.save();
+        ctx.globalAlpha = state.opacity;
+        ctx.font = `bold ${state.fontSize}px 'Orbitron', sans-serif`;
+        ctx.fillStyle = state.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Effective animation time = video time * speed
+        const at = t * state.animationSpeed;
+
+        if (state.repeatMode) {
+            const rotation = state.rotation * Math.PI / 180;
+            for (let x = -state.spacing; x < width + state.spacing * 2; x += state.spacing) {
+                for (let y = -state.spacing; y < height + state.spacing * 2; y += state.spacing) {
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(rotation);
+                    if (state.currentPreset === 'neon' || state.currentPreset === 'anti-theft') {
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = state.color;
+                    }
+                    ctx.fillText(state.watermarkText, 0, 0);
+                    ctx.restore();
+                }
+            }
+        } else {
+            let x, y;
+            switch (state.currentPreset) {
+                case 'moving':
+                    x = Math.sin(at * 0.5) * width * 0.3 + width / 2;
+                    y = Math.cos(at * 0.3) * height * 0.3 + height / 2;
+                    break;
+                case 'bouncing':
+                    x = width / 2;
+                    y = Math.abs(Math.sin(at * 2)) * height * 0.4 + height / 2;
+                    break;
+                case 'scrolling':
+                    x = ((at * 80) % (width + state.fontSize * state.watermarkText.length * 0.6));
+                    y = height / 2;
+                    break;
+                case 'floating':
+                    x = width / 2;
+                    y = height / 2 + Math.sin(at) * 30;
+                    break;
+                default: {
+                    const positions = {
+                        'top-left':     [state.fontSize * 2, state.fontSize],
+                        'top-right':    [width - state.fontSize * 2, state.fontSize],
+                        'bottom-left':  [state.fontSize * 2, height - state.fontSize],
+                        'bottom-right': [width - state.fontSize * 2, height - state.fontSize],
+                        'center':       [width / 2, height / 2]
+                    };
+                    [x, y] = positions[state.position] || [width / 2, height / 2];
+                }
+            }
+
+            ctx.save();
+            ctx.translate(x, y);
+            let rotation = state.rotation * Math.PI / 180;
+            if (state.currentPreset === 'rotating') rotation = at;
+            ctx.rotate(rotation);
+
+            if (state.currentPreset === 'neon') {
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = state.color;
+                ctx.fillText(state.watermarkText, 0, 0);
+                ctx.shadowBlur = 40;
+                ctx.fillText(state.watermarkText, 0, 0);
+            } else if (state.currentPreset === 'tiktok') {
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+                ctx.strokeText(state.watermarkText, 0, 0);
+                ctx.fillText(state.watermarkText, 0, 0);
+            } else {
+                ctx.fillText(state.watermarkText, 0, 0);
+            }
+            ctx.restore();
+        }
+        ctx.restore();
+    }
+
+    // ─── PREVIEW LOOP (uses requestVideoFrameCallback when available) ─────────────
+    function startPreviewLoop() {
+        if (state.animationId) {
+            cancelAnimationFrame(state.animationId);
+            state.animationId = null;
+        }
+
+        const ctx = el.watermarkCanvas.getContext('2d');
+
+        if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+            // Most accurate: fires exactly when a new video frame is decoded
+            let prevMediaTime = null;
+            const fpsIntervals = [];
+            function onFrame(now, meta) {
+                // FPS counter (wall clock based, for display)
+                state.frameCount++;
+                if (now - state.fpsUpdateTime > 1000) {
+                    state.fps = Math.round(state.frameCount * 1000 / (now - state.fpsUpdateTime));
+                    el.fpsCounter.textContent = `${state.fps} FPS`;
+                    state.frameCount = 0;
+                    state.fpsUpdateTime = now;
+                }
+
+                // Also measure real video FPS from mediaTime intervals
+                if (prevMediaTime !== null) {
+                    const interval = meta.mediaTime - prevMediaTime;
+                    if (interval > 0 && interval < 0.2) {
+                        fpsIntervals.push(interval);
+                        if (fpsIntervals.length > 30) fpsIntervals.shift();
+                        if (fpsIntervals.length >= 5) {
+                            const sorted = [...fpsIntervals].sort((a,b)=>a-b);
+                            const mid = sorted.slice(1, -1);
+                            const avg = mid.reduce((a,b)=>a+b,0) / mid.length;
+                            const f = Math.round(1 / avg);
+                            if (f >= 10 && f <= 120) state.fps = f;
+                        }
+                    }
+                }
+                prevMediaTime = meta.mediaTime;
+
+                ctx.clearRect(0, 0, el.watermarkCanvas.width, el.watermarkCanvas.height);
+                const t = meta.mediaTime; // actual video time in seconds
+                drawWatermark(ctx, el.watermarkCanvas.width, el.watermarkCanvas.height, t);
+
+                el.videoPlayer.requestVideoFrameCallback(onFrame);
+            }
+            el.videoPlayer.requestVideoFrameCallback(onFrame);
+            // Also run rAF for when video is paused (still need watermark visible)
+            function rafLoop(ts) {
+                if (!state.isPlaying) {
+                    // Redraw on controls change while paused
+                    ctx.clearRect(0, 0, el.watermarkCanvas.width, el.watermarkCanvas.height);
+                    drawWatermark(ctx, el.watermarkCanvas.width, el.watermarkCanvas.height, el.videoPlayer.currentTime);
+                }
+                state.animationId = requestAnimationFrame(rafLoop);
+            }
+            state.animationId = requestAnimationFrame(rafLoop);
+        } else {
+            // Fallback: rAF loop with actual currentTime
+            let lastDraw = -1;
+            function rafLoop(ts) {
+                // FPS counter
+                state.frameCount++;
+                if (ts - state.fpsUpdateTime > 1000) {
+                    state.fps = Math.round(state.frameCount * 1000 / (ts - state.fpsUpdateTime));
+                    el.fpsCounter.textContent = `${state.fps} FPS`;
+                    state.frameCount = 0;
+                    state.fpsUpdateTime = ts;
+                }
+
+                const t = el.videoPlayer.currentTime;
+                if (t !== lastDraw || !state.isPlaying) {
+                    ctx.clearRect(0, 0, el.watermarkCanvas.width, el.watermarkCanvas.height);
+                    drawWatermark(ctx, el.watermarkCanvas.width, el.watermarkCanvas.height, t);
+                    lastDraw = t;
+                }
+                state.animationId = requestAnimationFrame(rafLoop);
+            }
+            state.animationId = requestAnimationFrame(rafLoop);
+        }
+    }
+
+    // ─── EXPORT UI HELPERS ────────────────────────────────────────────────────────
+    function setExportUI(active, stage = 'Rendering') {
+        el.exportWebmBtn.disabled = active;
+        el.exportMp4Btn.disabled = active || !state.ffmpegReady;
+        el.exportProgress.style.display = active ? 'block' : 'none';
+        el.exportStage.textContent = stage;
+        if (!active) {
+            el.exportWebmBtn.textContent = '🎬 Export WebM';
+            el.exportMp4Btn.textContent = '🎥 Export MP4';
+            el.exportLog.textContent = '';
+            el.timeEstimated.textContent = '--';
+        }
+    }
+
+    function updateProgress(pct, elapsed, stage) {
+        el.progressFill.style.width = Math.min(pct, 100) + '%';
+        el.progressPercent.textContent = Math.round(Math.min(pct, 100)) + '%';
+        el.timeElapsed.textContent = elapsed.toFixed(1) + 's';
+        if (stage) el.exportStage.textContent = stage;
+        if (pct > 3 && pct < 99) {
+            const eta = (elapsed / pct * (100 - pct)).toFixed(0);
+            el.timeEstimated.textContent = eta + 's';
+        }
+    }
+
+    function log(msg) { el.exportLog.textContent = msg; }
+
+    function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 15000);
+    }
+
+    function buildFilename(ext) {
+        const safe = state.watermarkText.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_').slice(0, 40) || 'watermarked';
+        return `${safe}.${ext}`;
+    }
+
+    function finishExport(video, originalTime, wasPlaying) {
+        state.exportInProgress = false;
+        setExportUI(false);
+        // Restore video position
+        video.currentTime = originalTime;
+        if (wasPlaying) {
+            video.play().catch(() => {});
+            state.isPlaying = true;
+            el.playPauseBtn.textContent = '⏸ Pause';
+        }
+    }
+
+    // ─── SEEK HELPER — waits for actual decoded frame, not just seeked event ──────
+    // The `seeked` event fires when currentTime is set, but the frame may not be
+    // decoded yet. For long videos this causes wrong/frozen frames in the output.
+    // We use requestVideoFrameCallback when available to confirm the frame is real.
+    function seekTo(video, t) {
+        return new Promise(resolve => {
+            // If requestVideoFrameCallback available, use it for guaranteed decode
+            if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+                // Check if we're already at the right frame (within half a frame at 60fps)
+                if (Math.abs(video.currentTime - t) < 0.009) {
+                    resolve(); return;
+                }
+                // After seeked fires, wait one more rVFC to confirm frame is painted
+                const onSeeked = () => {
+                    video.removeEventListener('seeked', onSeeked);
+                    video.requestVideoFrameCallback(() => resolve());
+                };
+                video.addEventListener('seeked', onSeeked);
+                video.currentTime = t;
+            } else {
+                // Fallback: seeked + small delay to let decoder catch up
+                if (Math.abs(video.currentTime - t) < 0.001) { resolve(); return; }
+                const done = () => {
+                    video.removeEventListener('seeked', done);
+                    // Extra 16ms buffer for decoder on slower devices
+                    setTimeout(resolve, 16);
+                };
+                video.addEventListener('seeked', done);
+                video.currentTime = t;
+            }
+        });
+    }
+
+    // ─── DETECT REAL FPS ─────────────────────────────────────────────────────────
+    async function detectFps(video) {
+        // Use FPS already measured by the preview loop — no play() needed.
+        // state.fps is updated every second while video is in preview.
+        if (state.fps && state.fps >= 10 && state.fps <= 120) {
+            return state.fps;
+        }
+
+        // If preview hasn't measured yet (video just loaded, never played),
+        // try requestVideoFrameCallback with a short play burst — but only
+        // if video is already playing (export button tapped while playing).
+        if ('requestVideoFrameCallback' in HTMLVideoElement.prototype && state.isPlaying) {
+            const intervals = [];
+            await new Promise(resolve => {
+                let prev = null, count = 0;
+                const timeout = setTimeout(resolve, 2000);
+                function cb(_, meta) {
+                    if (prev !== null) intervals.push(meta.mediaTime - prev);
+                    prev = meta.mediaTime;
+                    if (++count < 8) video.requestVideoFrameCallback(cb);
+                    else { clearTimeout(timeout); resolve(); }
+                }
+                video.requestVideoFrameCallback(cb);
+            });
+            if (intervals.length >= 3) {
+                intervals.sort((a, b) => a - b);
+                const mid = intervals.slice(1, -1);
+                const avg = mid.reduce((a, b) => a + b, 0) / mid.length;
+                const f = Math.round(1 / avg);
+                if (f >= 10 && f <= 120) return f;
+            }
+        }
+
+        // Safe fallback — works for 99% of videos
+        return 30;
+    }
+
+    // ─── WEBM MUXER (pure JS, no captureStream needed) ───────────────────────────
+    // Uses WebCodecs VideoEncoder + AudioEncoder + webm-muxer
+    // Works on Weebly/Blogspot — no captureStream, no SharedArrayBuffer needed
+
+    async function exportWithWebCodecs(video, startWallTime) {
+        const duration = video.duration;
+        const W = video.videoWidth, H = video.videoHeight;
+
+        // ── Step 1: detect FPS ──
+        log('Detecting FPS...');
+        updateProgress(1, 0, 'Detecting FPS');
+        const fps = await detectFps(video);
+        await seekTo(video, 0);
+        const totalFrames = Math.ceil(duration * fps);
+        const frameDuration = 1 / fps;
+
+        // ── Step 2: extract audio via AudioContext into raw PCM ──
+        log('Extracting audio...');
+        updateProgress(3, (Date.now() - startWallTime) / 1000, 'Extracting audio');
+        let audioBuffer = null;
+        let hasAudio = false;
+        try {
+            const fileData = await state.videoFile.arrayBuffer();
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+            audioBuffer = await audioCtx.decodeAudioData(fileData);
+            audioCtx.close();
+            hasAudio = true;
+            log(`Audio: ${audioBuffer.numberOfChannels}ch @ ${audioBuffer.sampleRate}Hz, ${audioBuffer.duration.toFixed(1)}s`);
+        } catch(e) {
+            hasAudio = false;
+            log('No audio track found');
+        }
+
+        // ── Step 3: encode audio with AudioEncoder ──
+        let audioChunks = [];
+        let audioSampleRate = 48000;
+        let audioChannels = 2;
+
+        if (hasAudio && typeof AudioEncoder !== 'undefined') {
+            log('Encoding audio...');
+            updateProgress(5, (Date.now() - startWallTime) / 1000, 'Encoding audio');
+
+            audioSampleRate = audioBuffer.sampleRate;
+            audioChannels = Math.min(audioBuffer.numberOfChannels, 2);
+
+            let audioEncError = null;
+            const audioEncoder = new AudioEncoder({
+                output(chunk, meta) { audioChunks.push({ chunk, meta }); },
+                error(e) { audioEncError = e; }
+            });
+
+            audioEncoder.configure({
+                codec: 'opus',
+                sampleRate: audioSampleRate,
+                numberOfChannels: audioChannels,
+                bitrate: 128_000
+            });
+
+            // Feed audio in 20ms chunks (standard Opus frame size)
+            const frameSamples = Math.floor(audioSampleRate * 0.02); // 20ms
+            const totalSamples = audioBuffer.length;
+
+            // Build interleaved Float32 channel data
+            const ch0 = audioBuffer.getChannelData(0);
+            const ch1 = audioChannels > 1 ? audioBuffer.getChannelData(1) : ch0;
+
+            for (let offset = 0; offset < totalSamples; offset += frameSamples) {
+                const count = Math.min(frameSamples, totalSamples - offset);
+                const timestamp = Math.round(offset / audioSampleRate * 1_000_000);
+
+                // Build planar Float32Array for AudioData
+                const planes = [];
+                for (let c = 0; c < audioChannels; c++) {
+                    const src = c === 0 ? ch0 : ch1;
+                    planes.push(src.subarray(offset, offset + count));
+                }
+
+                const audioData = new AudioData({
+                    format: 'f32-planar',
+                    sampleRate: audioSampleRate,
+                    numberOfFrames: count,
+                    numberOfChannels: audioChannels,
+                    timestamp,
+                    data: planes[0].buffer.byteLength > 0 ? concatF32Planar(planes, count) : new Float32Array(count * audioChannels)
+                });
+
+                audioEncoder.encode(audioData);
+                audioData.close();
+
+                if (audioEncError) { hasAudio = false; audioChunks = []; break; }
+            }
+
+            if (hasAudio) {
+                await audioEncoder.flush();
+                audioEncoder.close();
+                log(`Audio encoded: ${audioChunks.length} chunks`);
+            }
+        } else if (hasAudio) {
+            // AudioEncoder not available — skip audio
+            hasAudio = false;
+            log('AudioEncoder unavailable, exporting video only');
+        }
+
+        // ── Step 4: encode video frames ──
+        const cvs = document.createElement('canvas');
+        cvs.width = W; cvs.height = H;
+        const ctx = cvs.getContext('2d', { willReadFrequently: false });
+
+        const videoChunks = [];
+        let videoEncError = null;
+
+        let codec = 'vp09.00.10.08';
+        try {
+            const sup = await VideoEncoder.isConfigSupported({ codec, width: W, height: H });
+            if (!sup.supported) codec = 'vp8';
+        } catch(_) { codec = 'vp8'; }
+
+        const videoEncoder = new VideoEncoder({
+            output(chunk, meta) { videoChunks.push({ chunk, meta }); },
+            error(e) { videoEncError = e; }
+        });
+        videoEncoder.configure({ codec, width: W, height: H, bitrate: 8_000_000, framerate: fps });
+
+        for (let i = 0; i < totalFrames; i++) {
+            const t = Math.min(i * frameDuration, duration - 0.001);
+
+            // seekTo now waits for actual decoded frame via requestVideoFrameCallback
+            await seekTo(video, t);
+
+            // Draw — video is guaranteed decoded at this point
+            ctx.clearRect(0, 0, W, H);
+            ctx.drawImage(video, 0, 0, W, H);
+            drawWatermark(ctx, W, H, t);
+
+            // Create VideoFrame with exact microsecond timestamp
+            const timestampUs = Math.round(t * 1_000_000);
+            const frame = new VideoFrame(cvs, { timestamp: timestampUs });
+            videoEncoder.encode(frame, { keyFrame: i % (fps * 2) === 0 }); // keyframe every 2s
+            frame.close();
+
+            if (videoEncError) throw videoEncError;
+
+            // Wait for encoder queue to drain if it gets too deep (prevents memory spike on long videos)
+            if (videoEncoder.encodeQueueSize > 10) {
+                await new Promise(r => setTimeout(r, 0));
+            }
+
+            const elapsed = (Date.now() - startWallTime) / 1000;
+            updateProgress(10 + (i + 1) / totalFrames * 78, elapsed,
+                `Encoding frame ${i + 1} / ${totalFrames}`);
+            log(`Frame ${i + 1}/${totalFrames} @ ${t.toFixed(3)}s`);
+
+            // Yield every frame to keep browser responsive (critical for long videos)
+            await new Promise(r => setTimeout(r, 0));
+        }
+
+        await videoEncoder.flush();
+        videoEncoder.close();
+
+        // ── Step 5: mux video + audio ──
+        log('Muxing...');
+        updateProgress(89, (Date.now() - startWallTime) / 1000, 'Muxing...');
+
+        const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/webm-muxer@5/+esm');
+        const target = new ArrayBufferTarget();
+
+        const muxerOpts = {
+            target,
+            video: { codec: codec.startsWith('vp09') ? 'V_VP9' : 'V_VP8', width: W, height: H },
+            firstTimestampBehavior: 'permissive'
+        };
+        if (hasAudio && audioChunks.length > 0) {
+            muxerOpts.audio = { codec: 'A_OPUS', sampleRate: audioSampleRate, numberOfChannels: audioChannels };
+        }
+
+        const muxer = new Muxer(muxerOpts);
+
+        for (const { chunk, meta } of videoChunks) muxer.addVideoChunk(chunk, meta);
+        if (hasAudio && audioChunks.length > 0) {
+            for (const { chunk, meta } of audioChunks) muxer.addAudioChunk(chunk, meta);
+        }
+
+        muxer.finalize();
+
+        const blob = new Blob([target.buffer], { type: 'video/webm' });
+        log(`Done: ${(blob.size / 1024 / 1024).toFixed(2)} MB${hasAudio ? ' (with audio)' : ' (no audio)'}`);
+        return { blob, ext: 'webm' };
+    }
+
+    // Helper: build planar Float32 buffer from channel arrays
+    function concatF32Planar(planes, frameCount) {
+        const out = new Float32Array(planes.length * frameCount);
+        for (let c = 0; c < planes.length; c++) {
+            out.set(planes[c].slice(0, frameCount), c * frameCount);
+        }
+        return out;
+    }
+
+    // ─── FALLBACK: captureStream with crossOrigin fix ─────────────────────────────
+    async function exportWithCaptureStream(video, startWallTime) {
+        const duration = video.duration;
+        const W = video.videoWidth, H = video.videoHeight;
+
+        log('Detecting FPS...');
+        updateProgress(1, 0, 'Detecting FPS');
+        const fps = await detectFps(video);
+        await seekTo(video, 0);
+
+        const totalFrames = Math.ceil(duration * fps);
+        const frameDuration = 1 / fps;
+
+        // Capture frames
+        const offscreen = document.createElement('canvas');
+        offscreen.width = W; offscreen.height = H;
+        const octx = offscreen.getContext('2d');
+        const frames = [];
+
+        for (let i = 0; i < totalFrames; i++) {
+            const t = Math.min(i * frameDuration, duration - 0.001);
+            await seekTo(video, t); // waits for actual decoded frame
+            octx.clearRect(0, 0, W, H);
+            try { octx.drawImage(video, 0, 0, W, H); } catch(e) {
+                throw new Error('Canvas tainted: video origin blocked by browser. Try downloading the file and uploading again.');
+            }
+            drawWatermark(octx, W, H, t);
+            frames.push(await createImageBitmap(offscreen));
+
+            const elapsed = (Date.now() - startWallTime) / 1000;
+            updateProgress((i + 1) / totalFrames * 55, elapsed,
+                `Capturing frame ${i + 1} / ${totalFrames}`);
+            log(`Frame ${i + 1}/${totalFrames} @ ${t.toFixed(3)}s`);
+            // Yield every frame — critical for long videos
+            await new Promise(r => setTimeout(r, 0));
+        }
+
+        updateProgress(56, (Date.now() - startWallTime) / 1000, 'Setting up encoder');
+
+        const encCanvas = document.createElement('canvas');
+        encCanvas.width = W; encCanvas.height = H;
+        const ectx = encCanvas.getContext('2d');
+        ectx.drawImage(frames[0], 0, 0); // draw before captureStream
+
+        const mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']
+            .find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+
+        const stream = encCanvas.captureStream(fps);
+        const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 10_000_000 });
+        const chunks = [];
+        recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+        recorder.start(100);
+        await new Promise(r => setTimeout(r, 300));
+
+        const msPerFrame = Math.max(Math.round(1000 / fps), 16);
+        for (let i = 0; i < frames.length; i++) {
+            ectx.clearRect(0, 0, W, H);
+            ectx.drawImage(frames[i], 0, 0);
+            frames[i].close();
+            await new Promise(r => setTimeout(r, msPerFrame));
+            const elapsed = (Date.now() - startWallTime) / 1000;
+            updateProgress(56 + (i + 1) / frames.length * 39, elapsed,
+                `Encoding frame ${i + 1} / ${frames.length}`);
+            log(`Encoding ${i + 1}/${frames.length}`);
+        }
+
+        if (recorder.state === 'recording') recorder.requestData();
+        await new Promise(r => setTimeout(r, 500));
+        const blobReady = new Promise(resolve => {
+            recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+        });
+        if (recorder.state !== 'inactive') recorder.stop();
+        const blob = await blobReady;
+
+        if (blob.size < 5000) throw new Error(`captureStream output prazan (${blob.size}B)`);
+        return { blob, ext: 'webm' };
+    }
+
+    // ─── MAIN EXPORT ENTRY ───────────────────────────────────────────────────────
+    async function startExport(format) {
+        if (state.exportInProgress) return;
+        if (!el.videoPlayer.src) { alert('Prvo uploaduj video!'); return; }
+
+        state.exportInProgress = true;
+        setExportUI(true, 'Starting...');
+
+        const video = el.videoPlayer;
+        el.renderCanvas.width = video.videoWidth;
+        el.renderCanvas.height = video.videoHeight;
+
+        const originalTime = video.currentTime;
+        const wasPlaying = state.isPlaying;
+
+        // NOTE: do NOT pause here — detectFps needs to call video.play() internally
+        // and on mobile, play() after a programmatic pause() without user gesture is blocked.
+        // The seek loop inside exportWithWebCodecs will pause the video naturally.
+        state.isPlaying = false;
+        el.playPauseBtn.textContent = '▶ Play';
+
+        const startWallTime = Date.now();
+
+        try {
+            let result;
+
+            // Strategy 1: WebCodecs (Chrome 94+, works on ANY hosting including Weebly/Blogspot)
+            if (typeof VideoEncoder !== 'undefined') {
+                log('Using WebCodecs encoder...');
+                try {
+                    result = await exportWithWebCodecs(video, startWallTime);
+                } catch(e) {
+                    console.warn('WebCodecs failed, trying captureStream:', e);
+                    log('WebCodecs failed, trying fallback...');
+                    result = await exportWithCaptureStream(video, startWallTime);
+                }
+            } else {
+                // Strategy 2: captureStream fallback
+                log('WebCodecs unavailable, using captureStream...');
+                result = await exportWithCaptureStream(video, startWallTime);
+            }
+
+            // Optional MP4 conversion if ffmpeg loaded
+            if (format === 'mp4' && state.ffmpegReady && result.ext === 'webm') {
+                result = await convertWebmToMp4(result.blob, startWallTime);
+            }
+
+            updateProgress(100, (Date.now() - startWallTime) / 1000, 'Gotovo! ✓');
+            log(`Gotovo! ${(result.blob.size / 1024 / 1024).toFixed(1)} MB`);
+            downloadBlob(result.blob, buildFilename(result.ext));
+
+        } catch (err) {
+            console.error('Export error:', err);
+            alert('Export nije uspeo:\n\n' + (err.message || err) +
+                '\n\nPreporučujemo Chrome 94+ browser za export.');
+        }
+
+        finishExport(video, originalTime, wasPlaying);
+    }
+
+    // ─── OPTIONAL MP4 VIA FFMPEG ──────────────────────────────────────────────────
+    async function convertWebmToMp4(webmBlob, startWallTime) {
+        const ffmpeg = state.ffmpegInstance;
+        const fetchFile = window._ffetchFile;
+        updateProgress(96, (Date.now() - startWallTime) / 1000, 'Converting to MP4');
+        log('Converting WebM → MP4...');
+        try {
+            ffmpeg.FS('writeFile', 'in.webm', await fetchFile(webmBlob));
+            await ffmpeg.run('-i','in.webm','-c:v','libx264','-preset','fast',
+                '-crf','18','-c:a','aac','-b:a','192k','-movflags','+faststart','-y','out.mp4');
+            const data = ffmpeg.FS('readFile', 'out.mp4');
+            const blob = new Blob([data.buffer], { type: 'video/mp4' });
+            try { ffmpeg.FS('unlink','in.webm'); ffmpeg.FS('unlink','out.mp4'); } catch(_){}
+            return { blob, ext: 'mp4' };
+        } catch(e) {
+            console.warn('MP4 failed:', e);
+            return { blob: webmBlob, ext: 'webm' };
+        }
+    }
+    </script>
+</body>
+</html>
+
+</script>
+</body>
+</html>
